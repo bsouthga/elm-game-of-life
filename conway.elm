@@ -6,22 +6,31 @@
 
 
 import List exposing (map, length, member, filter, concat)
-import Graphics.Element exposing (Element, show)
+import Graphics.Element exposing (Element, show, container, middle)
+import Graphics.Collage exposing (collage, move, square, filled, Form)
+import Time exposing (second, every, Time)
+import Task exposing (sleep, Task, andThen)
+import TaskTutorial exposing (print)
+import Color exposing (blue, gray)
+import Basics exposing (toFloat, round)
+import Window
 
+
+type alias Overlay = List Form
 type alias Board = List Cell
-type alias Cell = (Int, Int)
+type alias Cell = (Float, Float)
+
+
 
 -- board dimensions
-board =
-  {
-    height = 100
-  , width = 100
-  }
+height : Float
+height = 100
 
+width : Float
+width = 100
 
--- test board
-glider : Board
-glider = [(4,2),(2,3),(4,3),(3,4),(4,4)]
+cellSize : Float
+cellSize = 4
 
 
 -- check if a cell is in the board (element member of list)
@@ -35,21 +44,23 @@ dead : Board -> Cell -> Bool
 dead b c = not <| alive b c
 
 
--- get list of neighbor coordinates, bounded by board dimensions
+-- get list of neighbor coordinates, bounded by board dimensions --
 neighbors : Cell -> Board
 neighbors (x, y) =
-  map wrap [ (x-1,y-1) , (x  ,y-1),
-             (x+1,y-1) , (x-1,y  ),
-             (x+1,y  ) , (x-1,y+1),
-             (x  ,y+1) , (x+1,y+1) ]
+  map wrap
+    [
+       (x-1,y-1) , (x  ,y-1)  , (x+1,y-1)
+    ,  (x-1,y  ) , {- (x,y) -}  (x+1,y  )
+    ,  (x-1,y+1) , (x  ,y+1)  , (x+1,y+1)
+    ]
 
 
 -- wrap a cells coordinates around the edge of the board
 wrap : Cell -> Cell
 wrap (x, y) =
   (
-    ((x - 1) % board.width) + 1
-  , ((y - 1) % board.height + 1)
+    toFloat ( ((round (x - 1)) % (round width)) + 1)
+  , toFloat ( ((round (y - 1)) % (round height) + 1))
   )
 
 
@@ -94,5 +105,52 @@ evolve : Board -> Board
 evolve b = survivors b ++ births b
 
 
-main : Element
-main = show <| evolve glider
+
+-- test board
+glider : Board
+glider = [(4,2),(2,3),(4,3),(3,4),(4,4)]
+
+
+background : Overlay
+background =
+  [0..height]
+    |> map (\y -> map (\x -> (x, y)) [0..width])
+    |> concat
+    |> renderDead
+
+
+renderCell : Bool -> Cell -> Form
+renderCell fill (x,y) =
+  square cellSize
+    |> filled (if fill then blue else gray)
+    |> move
+        (
+          ((x - width/2)*cellSize)
+        , ((y - height/2)*cellSize)
+        )
+
+
+renderAlive : Board -> Overlay
+renderAlive b = map (renderCell True) b
+
+
+renderDead : Board -> Overlay
+renderDead b = map (renderCell False) b
+
+render : Board -> Element
+render b =
+  [background, renderAlive b]
+    |> concat
+    |> collage (round (cellSize*width)) (round (cellSize*height))
+
+
+main : Signal Element
+main =
+  Signal.map view Window.dimensions
+
+
+view : (Int,Int) -> Element
+view (w,h) =
+  glider
+    |> render
+    |> container w h middle
