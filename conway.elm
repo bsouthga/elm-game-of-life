@@ -6,31 +6,27 @@
 
 
 import List exposing (map, length, member, filter, concat)
-import Graphics.Element exposing (Element, show, container, middle)
-import Graphics.Collage exposing (collage, move, square, filled, Form)
-import Time exposing (second, every, Time)
-import Task exposing (sleep, Task, andThen)
-import TaskTutorial exposing (print)
-import Color exposing (blue, gray)
+import Graphics.Element exposing (Element, show, container, middle, flow, down)
+import Graphics.Collage exposing (collage, move, square, filled, Form, rect, outlined, solid)
+import Color exposing (lightBlue, lightGray)
 import Basics exposing (toFloat, round)
+import Signal exposing ((<~), (~), foldp)
+import Time exposing (every, second, Time)
 import Window
 
 
-type alias Overlay = List Form
-type alias Board = List Cell
+-- Convenience Type Aliases
 type alias Cell = (Float, Float)
+type alias Board = List Cell
+type alias Overlay = List Form
 
 
-
--- board dimensions
-height : Float
-height = 100
-
-width : Float
-width = 100
-
-cellSize : Float
-cellSize = 4
+-- board configuration
+height = 50
+width = 50
+cellSize = 5
+activeColor = lightBlue
+fps = 1
 
 
 -- check if a cell is in the board (element member of list)
@@ -74,7 +70,12 @@ livingNeighbors b c =
 
 -- Evolution Rules
 shouldSurvive : Board -> Cell -> Bool
-shouldSurvive b c = member (livingNeighbors b c) [2, 3]
+shouldSurvive b c =
+  let n = livingNeighbors b c
+  in case n of
+    2 -> True
+    3 -> True
+    _ -> False
 
 shouldBeBorn : Board -> Cell -> Bool
 shouldBeBorn b c = (dead b c) && (livingNeighbors b c == 3)
@@ -106,51 +107,59 @@ evolve b = survivors b ++ births b
 
 
 
--- test board
-glider : Board
-glider = [(4,2),(2,3),(4,3),(3,4),(4,4)]
-
-
-background : Overlay
-background =
-  [0..height]
-    |> map (\y -> map (\x -> (x, y)) [0..width])
-    |> concat
-    |> renderDead
-
-
-renderCell : Bool -> Cell -> Form
-renderCell fill (x,y) =
+renderCell : Cell -> Form
+renderCell (x,y) =
   square cellSize
-    |> filled (if fill then blue else gray)
+    |> filled activeColor
     |> move
         (
-          ((x - width/2)*cellSize)
-        , ((y - height/2)*cellSize)
+          (x - width/2)*cellSize
+        , (y - height/2)*cellSize
         )
 
+-- one big rectangle for background
+background : Form
+background =
+  rect (width*cellSize) (height*cellSize)
+    |> filled lightGray
 
-renderAlive : Board -> Overlay
-renderAlive b = map (renderCell True) b
-
-
-renderDead : Board -> Overlay
-renderDead b = map (renderCell False) b
 
 render : Board -> Element
 render b =
-  [background, renderAlive b]
-    |> concat
+  background :: map renderCell b
     |> collage (round (cellSize*width)) (round (cellSize*height))
 
 
 main : Signal Element
-main =
-  Signal.map view Window.dimensions
+main = view <~ Window.dimensions ~ foldp step start (every (second/fps))
 
 
-view : (Int,Int) -> Element
-view (w,h) =
-  glider
-    |> render
-    |> container w h middle
+step : Time -> Board -> Board
+step t past = evolve past
+
+-- starting signal for evolution
+start : Board
+start = map (\x -> (x, 25)) [20..30]
+
+
+view : (Int,Int) -> Board -> Element
+view (w,h) board =
+  container w h middle
+    <| flow down
+      [
+        show "conway.elm"
+      , render board
+      ]
+
+
+
+
+-- create a glider centered at a given cell
+glider : Cell -> Board
+glider (x, y) =
+  map wrap
+    [
+      {-----}    {-----}    (x+1, y-1)
+      ,(x-1, y) {-(x, y)-} ,(x+1, y)
+      {-----}  ,(x, y+1)   ,(x+1, y+1)
+    ]
