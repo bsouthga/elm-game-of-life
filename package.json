@@ -11,7 +11,7 @@
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "make": "elm-make conway.elm --output=./dist/index.html && ./node_modules/.bin/html-minifier ./dist/index.html --minify-js --minify-css > ./dist/index.min.html",
+    "make": "elm-make conway.elm --output=./dist/index.html && ./node_modules/.bin/html-minifier ./dist/index.html --minify-js --minify-css > ./dist/index.min.html && rm ./dist/index.html && mv ./dist/index.min.html ./dist/index.html",
     "deploy": "npm run-script make && ./node_modules/.bin/gulp deploy"
   },
   "repository": {
