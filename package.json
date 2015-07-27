@@ -1,0 +1,27 @@
+{
+  "name": "elm-game-of-life",
+  "version": "1.0.0",
+  "description": "Learning elm through conway's game of life",
+  "main": "elm.js",
+  "dependencies": {
+    "gulp": "^3.9.0",
+    "gulp-gh-pages": "^0.5.2",
+    "html-minifier": "^0.7.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "make": "elm-make conway.elm --output=./dist/index.html && ./node_modules/.bin/html-minifier ./dist/index.html --minify-js --minify-css > ./dist/index.min.html",
+    "deploy": "npm run-script make && ./node_modules/.bin/gulp deploy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bsouthga/elm-game-of-life.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bsouthga/elm-game-of-life/issues"
+  },
+  "homepage": "https://github.com/bsouthga/elm-game-of-life#readme"
+}

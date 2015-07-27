@@ -130,28 +130,30 @@ render b =
     |> collage (round (cellSize*width)) (round (cellSize*height))
 
 
+-- run the game
 main : Signal Element
 main = view <~ Window.dimensions ~ foldp step start (every (second/fps))
 
 
+-- one step of the game
 step : Time -> Board -> Board
 step t past = evolve past
+
 
 -- starting signal for evolution
 start : Board
 start = map (\x -> (x, 25)) [20..30]
 
 
+-- Convert board to displayable element
 view : (Int,Int) -> Board -> Element
 view (w,h) board =
   container w h middle
     <| flow down
-      [
-        show "conway.elm"
-      , render board
-      ]
-
-
+        [
+          show "conway.elm"
+        , render board
+        ]
 
 
 -- create a glider centered at a given cell
